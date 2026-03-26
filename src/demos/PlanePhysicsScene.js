@@ -1,18 +1,13 @@
 /**
- * Plane detection + Rapier physics (same integration path as XR Blocks Core).
- * - XR Blocks: World / PlaneDetector / DetectedPlane meshes from WebXR or simulator.
- * - Physics: Rapier via `options.physics` (explicit `@dimforge/rapier3d-compat` import).
- * - This script adds kinematic trimesh colliders for each plane mesh and dynamic balls/boxes.
+ * Ballpit-style environment collision: XR Blocks **depth mesh** → Rapier trimesh
+ * (`depth.depthMesh.initRapierPhysics` in Core), not WebXR plane detection.
  *
- * Spawn + sync follow the Ballpit pattern (BallShooter): parent meshes under this
- * script and update transforms in `physicsStep()`, not `update()`.
+ * Spawn + sync follow Ballpit (BallShooter): parent meshes under this script and
+ * update transforms in `physicsStep()`.
  * @see https://xrblocks.github.io/docs/samples/Ballpit/
  */
 import * as THREE from 'three'
 import * as xb from 'xrblocks'
-
-const _v = new THREE.Vector3()
-const _q = new THREE.Quaternion()
 
 function randomColor() {
   return Math.floor(Math.random() * 0xffffff)
@@ -60,29 +55,6 @@ class SpawnCubeButton extends xb.TextButton {
   }
 }
 
-/**
- * Rapier trimesh data in mesh-local space (matches rigid body pose = mesh world pose).
- * ShapeGeometry / many BufferGeometries are non-indexed (no index buffer); indexed
- * geometry uses shared vertices.
- *
- * @param {THREE.BufferGeometry} geometry
- * @returns {{ vertices: Float32Array, indices: Uint32Array } | null}
- */
-function getTrimeshArrays(geometry) {
-  const pos = geometry.attributes.position
-  if (!pos) return null
-  const vertices = new Float32Array(pos.array)
-  const idx = geometry.getIndex()
-  if (idx) {
-    return { vertices, indices: new Uint32Array(idx.array) }
-  }
-  const n = pos.count
-  if (n < 3 || n % 3 !== 0) return null
-  const indices = new Uint32Array(n)
-  for (let i = 0; i < n; i++) indices[i] = i
-  return { vertices, indices }
-}
-
 export class PlanePhysicsScene extends xb.Script {
   constructor() {
     super()
@@ -90,12 +62,8 @@ export class PlanePhysicsScene extends xb.Script {
     this.world = null
     /** @type {any} */
     this.RAPIER = null
-    /** @type {Map<THREE.Mesh, { body: import('@dimforge/rapier3d-compat').RigidBody }>} */
-    this.planeBodies = new Map()
     /** @type {Array<{ mesh: THREE.Mesh; body: import('@dimforge/rapier3d-compat').RigidBody }>} */
     this.spawned = []
-    /** Demo-only fill so planes read clearly on passthrough (wireframe alone is easy to miss). */
-    this._planeDebugShown = false
   }
 
   async init() {
@@ -104,7 +72,6 @@ export class PlanePhysicsScene extends xb.Script {
     sun.position.set(2, 4, 3)
     this.add(sun)
     await this.buildSpawnPanel()
-    // Same as BallPit.init(): ensure this script is attached to the scene graph.
     xb.add(this)
   }
 
@@ -142,131 +109,6 @@ export class PlanePhysicsScene extends xb.Script {
   initPhysics(physics) {
     this.world = physics.blendedWorld
     this.RAPIER = physics.RAPIER
-  }
-
-  onSimulatorStarted() {
-    this.ensureSimulatorFloor()
-  }
-
-  enablePlaneDebugRendering() {
-    if (this._planeDebugShown || !xb.world?.planes) return
-    this._planeDebugShown = true
-    xb.world.showDebugVisualizations(true)
-  }
-
-  /**
-   * Desktop simulator does not load planes unless `simulator.scenePlanesPath` is set.
-   * XR Blocks' `PlaneDetector.get()` omits simulator-only planes, so we use `children`.
-   */
-  ensureSimulatorFloor() {
-    const pd = xb.world.planes
-    if (!pd || pd.children.length > 0) return
-
-    const z = -xb.user.objectDistance
-    pd.setSimulatorPlanes([
-      {
-        type: 'horizontal',
-        area: 6,
-        position: new THREE.Vector3(0, 0, z),
-        quaternion: new THREE.Quaternion(),
-        polygon: [
-          new THREE.Vector2(-1.2, -0.9),
-          new THREE.Vector2(1.2, -0.9),
-          new THREE.Vector2(1.2, 0.9),
-          new THREE.Vector2(-1.2, 0.9),
-        ],
-      },
-    ])
-  }
-
-  getPlaneMeshes() {
-    const pd = xb.world.planes
-    if (!pd) return []
-    return pd.children.filter(
-      (c) => c.isMesh && c.geometry && c.geometry.attributes.position,
-    )
-  }
-
-  ensurePlaneColliders() {
-    if (!this.world || !this.RAPIER) return
-
-    const RAPIER = this.RAPIER
-    const meshes = this.getPlaneMeshes()
-
-    for (const mesh of meshes) {
-      if (this.planeBodies.has(mesh)) continue
-
-      const data = getTrimeshArrays(mesh.geometry)
-      if (!data) continue
-
-      mesh.updateMatrixWorld(true)
-      mesh.getWorldPosition(_v)
-      mesh.getWorldQuaternion(_q)
-
-      const bodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased()
-        .setTranslation(_v.x, _v.y, _v.z)
-        .setRotation({
-          x: _q.x,
-          y: _q.y,
-          z: _q.z,
-          w: _q.w,
-        })
-
-      const body = this.world.createRigidBody(bodyDesc)
-      const colliderDesc = RAPIER.ColliderDesc.trimesh(
-        data.vertices,
-        data.indices,
-      ).setFriction(1.0)
-      this.world.createCollider(colliderDesc, body)
-      this.planeBodies.set(mesh, { body })
-    }
-  }
-
-  /**
-   * Semi-transparent fill + ensure SDK wireframe planes stay visible.
-   */
-  ensurePlaneDebugMeshes() {
-    const pd = xb.world.planes
-    if (!pd || !this._planeDebugShown) return
-
-    for (const mesh of this.getPlaneMeshes()) {
-      let overlay = mesh.userData.__planePhysicsFill
-      if (!overlay) {
-        overlay = new THREE.Mesh(
-          mesh.geometry,
-          new THREE.MeshBasicMaterial({
-            color: 0x22c55e,
-            transparent: true,
-            opacity: 0.22,
-            side: THREE.DoubleSide,
-            depthWrite: false,
-          }),
-        )
-        overlay.renderOrder = 1
-        overlay.position.set(0, 0.002, 0)
-        mesh.add(overlay)
-        mesh.userData.__planePhysicsFill = overlay
-      } else if (overlay.geometry !== mesh.geometry) {
-        overlay.geometry = mesh.geometry
-      }
-    }
-  }
-
-  syncPlaneKinematics() {
-    if (!this.world || !this.RAPIER) return
-
-    for (const [mesh, { body }] of this.planeBodies) {
-      if (!mesh.parent) {
-        this.world.removeRigidBody(body)
-        this.planeBodies.delete(mesh)
-        continue
-      }
-      mesh.updateMatrixWorld(true)
-      mesh.getWorldPosition(_v)
-      mesh.getWorldQuaternion(_q)
-      body.setNextKinematicTranslation({ x: _v.x, y: _v.y, z: _v.z })
-      body.setNextKinematicRotation({ x: _q.x, y: _q.y, z: _q.z, w: _q.w })
-    }
   }
 
   getSpawnPoint() {
@@ -309,8 +151,6 @@ export class PlanePhysicsScene extends xb.Script {
     mesh.castShadow = true
     mesh.receiveShadow = true
     mesh.position.copy(p)
-    // Match Ballpit: parent meshes under this script (not scene root) so they
-    // follow the same graph as BallShooter and sync in physicsStep().
     this.add(mesh)
     this.spawned.push({ mesh, body })
   }
@@ -351,10 +191,6 @@ export class PlanePhysicsScene extends xb.Script {
     this.spawned.push({ mesh, body })
   }
 
-  /**
-   * Ballpit (BallShooter) syncs mesh ↔ Rapier in `physicsStep()` right after
-   * Core’s `world.step()`, not in `update()`. That matches the fixed physics interval.
-   */
   physicsStep() {
     for (const { mesh, body } of this.spawned) {
       const t = body.translation()
@@ -362,12 +198,5 @@ export class PlanePhysicsScene extends xb.Script {
       mesh.position.set(t.x, t.y, t.z)
       mesh.quaternion.set(r.x, r.y, r.z, r.w)
     }
-  }
-
-  update() {
-    this.enablePlaneDebugRendering()
-    this.ensurePlaneDebugMeshes()
-    this.ensurePlaneColliders()
-    this.syncPlaneKinematics()
   }
 }

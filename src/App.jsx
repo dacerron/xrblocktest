@@ -18,7 +18,7 @@ function App() {
         <span aria-hidden="true"> · </span>
         <a href="?demo=modelviewer">Model viewer</a>
         <span aria-hidden="true"> · </span>
-        <a href="?demo=planes">Plane physics</a>
+        <a href="?demo=planes">Depth physics</a>
       </nav>
       {body}
     </>

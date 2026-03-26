@@ -6,8 +6,9 @@ import { PlanePhysicsScene } from './PlanePhysicsScene.js'
 import { applySimulatorAutostart } from '../xr/applySimulatorAutostart.js'
 
 /**
- * Plane detection (XR Blocks) + Rapier physics (explicit compat package, same hook as Core).
- * Spawn controls are a SpatialPanel with TextButtons (reticle trigger / hand touch).
+ * Ballpit-style: depth mesh → Rapier environment colliders (Core), plus local spawns.
+ * Spawn UI: SpatialPanel + TextButtons (reticle / hand touch).
+ * @see https://xrblocks.github.io/docs/samples/Ballpit/
  */
 export default function PlanePhysicsDemo() {
   const canvasRef = useRef(null)
@@ -25,11 +26,13 @@ export default function PlanePhysicsDemo() {
       xb.add(new PlanePhysicsScene())
       const options = new xb.Options()
       options.canvas = canvas
-      options.setAppTitle('Plane physics')
-      options.enablePlaneDetection()
+      options.setAppTitle('Depth physics')
+      // Same preset as demos/ballpit/main.js (default path, not ?scenemesh).
+      options.depth = new xb.DepthOptions(xb.xrDepthMeshPhysicsOptions)
+      options.depth.matchDepthView = false
+      options.depth.depthMesh.colliderUpdateFps = 5
       options.enableReticles()
       options.enableHands()
-      options.world.planes.showDebugVisualizations = true
       options.physics = {
         RAPIER,
         gravity: { x: 0, y: -9.81, z: 0 },

@@ -10,13 +10,13 @@ Use the query parameter `demo` (full page load):
 
 - **Basic pinch** (default): `?demo=basic` — cylinder in front of you; pinch/select changes color.
 - **Model viewer** (from the [docs sample](https://xrblocks.github.io/docs/samples/ModelViewer/)): `?demo=modelviewer` — `xb.ModelViewer` scenes loading remote GLTF/splat assets.
-- **Plane physics**: `?demo=planes` — WebXR **plane detection** via `options.enablePlaneDetection()` / `xb.world.planes`, with **Rapier** rigid bodies for spawned spheres/cubes. On desktop simulator, a fallback floor plane is injected so you can test without real room scanning. Spawning uses an XR Blocks **SpatialPanel** with **TextButton** targets (controller reticle / hand touch).
+- **Depth physics** (`?demo=planes`): Ballpit-style **depth mesh** collision — `options.depth = new xb.DepthOptions(xb.xrDepthMeshPhysicsOptions)` so Core attaches Rapier colliders to the environment mesh (not plane detection). Spawned spheres/cubes use the same **Rapier** world. Requires a session with **depth-sensing** (e.g. Quest MR). Spawning uses an XR Blocks **SpatialPanel** with **TextButton** targets.
 
 Example on GitHub Pages:
 
 - `https://dacerron.github.io/xrblocktest/?demo=modelviewer`
 
-**External library used for physics:** XR Blocks wires physics when you pass `options.physics.RAPIER`. This demo loads **`@dimforge/rapier3d-compat`** (WASM, same family as XR Blocks’ Rapier integration) and passes it into options. Everything else in the scene uses XR Blocks APIs (`Script`, `World`, plane meshes).
+**External library used for physics:** XR Blocks wires physics when you pass `options.physics.RAPIER`. This demo loads **`@dimforge/rapier3d-compat`** (WASM, same family as XR Blocks’ Rapier integration) and passes it into options. With **`options.depth`** enabled, Core calls **`depth.depthMesh.initRapierPhysics(RAPIER, blendedWorld)`** so the depth mesh collides with the same world as your spawns ([Ballpit](https://xrblocks.github.io/docs/samples/Ballpit/) uses the same pattern).
 
 Remote 3D assets and CDN bases are listed in [docs/ASSETS.md](docs/ASSETS.md).
 
