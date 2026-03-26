@@ -1,8 +1,25 @@
 # XR Blocks Quest 3 Demo (Vite + React)
 
-This project renders a first **non-AI** [XR Blocks](https://xrblocks.github.io/) scene (a cylinder that changes color when you select/pinch).
+This project hosts **non-AI** [XR Blocks](https://xrblocks.github.io/) demos as a static Vite + React site.
 
-It is intended to be hosted as a static site so you can open it in the **Quest 3 standalone browser**.
+It is intended to be hosted so you can open it in a **desktop browser** (simulator + keyboard) or on a **Quest 3** standalone browser.
+
+## Demos
+
+Use the query parameter `demo` (full page load):
+
+- **Basic pinch** (default): `?demo=basic` — cylinder in front of you; pinch/select changes color.
+- **Model viewer** (from the [docs sample](https://xrblocks.github.io/docs/samples/ModelViewer/)): `?demo=modelviewer` — `xb.ModelViewer` scenes loading remote GLTF/splat assets.
+
+Example on GitHub Pages:
+
+- `https://dacerron.github.io/xrblocktest/?demo=modelviewer`
+
+Remote 3D assets and CDN bases are listed in [docs/ASSETS.md](docs/ASSETS.md).
+
+## Desktop without a headset (WASD)
+
+On browsers where **immersive WebXR is not available**, the app sets `alwaysAutostartSimulator` so the XR Blocks **desktop simulator** starts automatically. You can move with **WASD** (A/D strafe, W/S forward/back, Q/E vertical), look with the **mouse**, and use `` ` `` to toggle simulator UI (see XR Blocks simulator help). When immersive VR/AR *is* available (e.g. Quest), the normal **Enter XR** flow is used instead of forcing the simulator.
 
 ## Local development
 
@@ -23,6 +40,8 @@ XR Blocks requires a secure context, so serve the `dist/` directory over **HTTPS
 1. Host `dist/` on an HTTPS static host (for example: GitHub Pages, Netlify, or Vercel).
 2. Make sure your Quest 3 can reach the site URL.
 3. Open the URL in Quest 3’s standalone browser and allow any permission prompts (WebXR/hand tracking).
-4. Confirm:
+4. Confirm (basic demo):
    - You can see the cylinder in front of you.
    - Selecting/pinching changes the cylinder color.
+
+For the model viewer demo, open `?demo=modelviewer` and confirm models load from the network (may take a few seconds).
