@@ -10,10 +10,13 @@ Use the query parameter `demo` (full page load):
 
 - **Basic pinch** (default): `?demo=basic` — cylinder in front of you; pinch/select changes color.
 - **Model viewer** (from the [docs sample](https://xrblocks.github.io/docs/samples/ModelViewer/)): `?demo=modelviewer` — `xb.ModelViewer` scenes loading remote GLTF/splat assets.
+- **Plane physics**: `?demo=planes` — WebXR **plane detection** via `options.enablePlaneDetection()` / `xb.world.planes`, with **Rapier** rigid bodies for spawned spheres/cubes. On desktop simulator, a fallback floor plane is injected so you can test without real room scanning. Spawning uses two on-screen buttons (React).
 
 Example on GitHub Pages:
 
 - `https://dacerron.github.io/xrblocktest/?demo=modelviewer`
+
+**External library used for physics:** XR Blocks wires physics when you pass `options.physics.RAPIER`. This demo loads **`@dimforge/rapier3d-compat`** (WASM, same family as XR Blocks’ Rapier integration) and passes it into options. Everything else in the scene uses XR Blocks APIs (`Script`, `World`, plane meshes).
 
 Remote 3D assets and CDN bases are listed in [docs/ASSETS.md](docs/ASSETS.md).
 
