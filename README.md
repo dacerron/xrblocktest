@@ -16,7 +16,7 @@ Example on GitHub Pages:
 
 - `https://dacerron.github.io/xrblocktest/?demo=modelviewer`
 
-**External library used for physics:** XR Blocks wires physics when you pass `options.physics.RAPIER`. This demo uses **`@dimforge/rapier3d-simd-compat`** (same package as the official [Ballpit](https://xrblocks.github.io/docs/samples/Ballpit/) sample’s `import RAPIER from '@dimforge/rapier3d-simd-compat'`), not `rapier3d-compat`, so the WASM build matches what XR Blocks’ depth + physics path expects. With **`options.depth`** enabled, Core calls **`depth.depthMesh.initRapierPhysics(RAPIER, blendedWorld)`** so the depth mesh collides in the same Rapier world as your spawns.
+**External library used for physics:** XR Blocks wires physics when you pass `options.physics.RAPIER`. This demo uses **`@dimforge/rapier3d-simd-compat`** (same package as the official [Ballpit](https://xrblocks.github.io/docs/samples/Ballpit/) sample’s `import RAPIER from '@dimforge/rapier3d-simd-compat'`), not `rapier3d-compat`, so the WASM build matches what XR Blocks’ depth + physics path expects. **Do not** call `RAPIER.init()` yourself before `xb.init()` — only Core’s `Physics.init()` should initialize Rapier and create the `World` (Ballpit never pre-inits). With **`options.depth`** enabled, Core calls **`depth.depthMesh.initRapierPhysics(RAPIER, blendedWorld)`** so the depth mesh collides in the same Rapier world as your spawns.
 
 Remote 3D assets and CDN bases are listed in [docs/ASSETS.md](docs/ASSETS.md).
 

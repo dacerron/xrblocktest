@@ -21,8 +21,8 @@ export default function PlanePhysicsDemo() {
       const canvas = canvasRef.current
       if (!canvas) return
 
-      await RAPIER.init()
-
+      // Do not call RAPIER.init() here — Core’s Physics.init() does that once and
+      // then creates the World. A second init() before xb.init() can break WASM state.
       xb.add(new PlanePhysicsScene())
       const options = new xb.Options()
       options.canvas = canvas

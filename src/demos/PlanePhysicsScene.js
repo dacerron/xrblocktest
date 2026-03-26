@@ -2,8 +2,8 @@
  * Ballpit-style environment collision: XR Blocks **depth mesh** → Rapier trimesh
  * (`depth.depthMesh.initRapierPhysics` in Core), not WebXR plane detection.
  *
- * Spawn + sync follow Ballpit (BallShooter): parent meshes under this script and
- * update transforms in `physicsStep()`.
+ * Spawns live under `spawnRoot` on `xb.scene` (identity transform, Rapier world space).
+ * Sync transforms in both `physicsStep()` and `update()` so rAF render matches physics.
  * @see https://xrblocks.github.io/docs/samples/Ballpit/
  */
 import * as THREE from 'three'
@@ -64,6 +64,9 @@ export class PlanePhysicsScene extends xb.Script {
     this.RAPIER = null
     /** @type {Array<{ mesh: THREE.Mesh; body: import('@dimforge/rapier3d-simd-compat').RigidBody }>} */
     this.spawned = []
+    /** World-space parent for spawned meshes (identity transform; matches Rapier world coords). */
+    this.spawnRoot = new THREE.Group()
+    this.spawnRoot.name = 'DepthPhysicsSpawns'
   }
 
   async init() {
@@ -73,6 +76,7 @@ export class PlanePhysicsScene extends xb.Script {
     this.add(sun)
     await this.buildSpawnPanel()
     xb.add(this)
+    xb.scene.add(this.spawnRoot)
   }
 
   async buildSpawnPanel() {
@@ -150,8 +154,9 @@ export class PlanePhysicsScene extends xb.Script {
     )
     mesh.castShadow = true
     mesh.receiveShadow = true
+    mesh.frustumCulled = false
     mesh.position.copy(p)
-    this.add(mesh)
+    this.spawnRoot.add(mesh)
     this.spawned.push({ mesh, body })
   }
 
@@ -186,17 +191,37 @@ export class PlanePhysicsScene extends xb.Script {
     )
     mesh.castShadow = true
     mesh.receiveShadow = true
+    mesh.frustumCulled = false
     mesh.position.copy(p)
-    this.add(mesh)
+    this.spawnRoot.add(mesh)
     this.spawned.push({ mesh, body })
   }
 
-  physicsStep() {
+  syncSpawnedMeshes() {
     for (const { mesh, body } of this.spawned) {
       const t = body.translation()
       const r = body.rotation()
+      if (
+        !Number.isFinite(t.x) ||
+        !Number.isFinite(t.y) ||
+        !Number.isFinite(t.z)
+      ) {
+        continue
+      }
       mesh.position.set(t.x, t.y, t.z)
       mesh.quaternion.set(r.x, r.y, r.z, r.w)
     }
+  }
+
+  /**
+   * Physics runs on an interval; `update()` runs every rAF. Sync both so the
+   * render never shows stale transforms for a frame.
+   */
+  physicsStep() {
+    this.syncSpawnedMeshes()
+  }
+
+  update() {
+    this.syncSpawnedMeshes()
   }
 }
