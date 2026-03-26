@@ -10,7 +10,7 @@ Use the query parameter `demo` (full page load):
 
 - **Basic pinch** (default): `?demo=basic` — cylinder in front of you; pinch/select changes color.
 - **Model viewer** (from the [docs sample](https://xrblocks.github.io/docs/samples/ModelViewer/)): `?demo=modelviewer` — `xb.ModelViewer` scenes loading remote GLTF/splat assets.
-- **Plane physics**: `?demo=planes` — WebXR **plane detection** via `options.enablePlaneDetection()` / `xb.world.planes`, with **Rapier** rigid bodies for spawned spheres/cubes. On desktop simulator, a fallback floor plane is injected so you can test without real room scanning. Spawning uses two on-screen buttons (React).
+- **Plane physics**: `?demo=planes` — WebXR **plane detection** via `options.enablePlaneDetection()` / `xb.world.planes`, with **Rapier** rigid bodies for spawned spheres/cubes. On desktop simulator, a fallback floor plane is injected so you can test without real room scanning. Spawning uses an XR Blocks **SpatialPanel** with **TextButton** targets (controller reticle / hand touch).
 
 Example on GitHub Pages:
 

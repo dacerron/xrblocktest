@@ -7,7 +7,7 @@ import { applySimulatorAutostart } from '../xr/applySimulatorAutostart.js'
 
 /**
  * Plane detection (XR Blocks) + Rapier physics (explicit compat package, same hook as Core).
- * Spawn buttons are plain HTML (React) for clarity; scene logic is XR Blocks + Rapier.
+ * Spawn controls are a SpatialPanel with TextButtons (reticle trigger / hand touch).
  */
 export default function PlanePhysicsDemo() {
   const canvasRef = useRef(null)
@@ -27,6 +27,8 @@ export default function PlanePhysicsDemo() {
       options.canvas = canvas
       options.setAppTitle('Plane physics')
       options.enablePlaneDetection()
+      options.enableReticles()
+      options.enableHands()
       options.world.planes.showDebugVisualizations = true
       options.physics = {
         RAPIER,
@@ -41,23 +43,5 @@ export default function PlanePhysicsDemo() {
     void run()
   }, [])
 
-  return (
-    <>
-      <canvas ref={canvasRef} className="xb-canvas" />
-      <div className="plane-demo-controls">
-        <button
-          type="button"
-          onClick={() => globalThis.__planePhysicsSpawn?.('sphere')}
-        >
-          Spawn sphere
-        </button>
-        <button
-          type="button"
-          onClick={() => globalThis.__planePhysicsSpawn?.('cube')}
-        >
-          Spawn cube
-        </button>
-      </div>
-    </>
-  )
+  return <canvas ref={canvasRef} className="xb-canvas" />
 }

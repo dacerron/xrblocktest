@@ -14,6 +14,48 @@ function randomColor() {
   return Math.floor(Math.random() * 0xffffff)
 }
 
+class SpawnSphereButton extends xb.TextButton {
+  /**
+   * @param {PlanePhysicsScene} scene
+   */
+  constructor(scene) {
+    super({
+      text: 'Sphere',
+      backgroundColor: '#2d3f66',
+      fontSize: 0.036,
+      fontColor: 0xffffff,
+      width: 0.46,
+      height: 0.82,
+    })
+    this.spawnScene = scene
+  }
+
+  onTriggered() {
+    this.spawnScene.spawnSphere()
+  }
+}
+
+class SpawnCubeButton extends xb.TextButton {
+  /**
+   * @param {PlanePhysicsScene} scene
+   */
+  constructor(scene) {
+    super({
+      text: 'Cube',
+      backgroundColor: '#3d5c4a',
+      fontSize: 0.036,
+      fontColor: 0xffffff,
+      width: 0.46,
+      height: 0.82,
+    })
+    this.spawnScene = scene
+  }
+
+  onTriggered() {
+    this.spawnScene.spawnCube()
+  }
+}
+
 /**
  * @param {THREE.BufferGeometry} geometry
  * @returns {{ vertices: Float32Array, indices: Uint32Array } | null}
@@ -40,11 +82,40 @@ export class PlanePhysicsScene extends xb.Script {
     this.spawned = []
   }
 
-  init() {
+  async init() {
     this.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2))
     const sun = new THREE.DirectionalLight(0xffffff, 1.5)
     sun.position.set(2, 4, 3)
     this.add(sun)
+    await this.buildSpawnPanel()
+  }
+
+  async buildSpawnPanel() {
+    const panel = new xb.SpatialPanel({
+      backgroundColor: '#1a1a22cc',
+      width: 0.52,
+      height: 0.11,
+      useDefaultPosition: false,
+      draggable: true,
+      keepFacingCamera: true,
+      showHighlights: true,
+      touchable: true,
+    })
+    panel.isRoot = true
+    this.add(panel)
+
+    const grid = panel.addGrid()
+    const row = grid.addRow({ weight: 1 })
+    const sphereBtn = new SpawnSphereButton(this)
+    const cubeBtn = new SpawnCubeButton(this)
+    sphereBtn.weight = 0.5
+    cubeBtn.weight = 0.5
+    row.add(sphereBtn)
+    row.add(cubeBtn)
+
+    const z = -Math.min(xb.user.panelDistance * 0.55, 1.1)
+    panel.position.set(0, xb.user.height - 0.18, z)
+    panel.updateLayouts()
   }
 
   /**
@@ -57,17 +128,6 @@ export class PlanePhysicsScene extends xb.Script {
 
   onSimulatorStarted() {
     this.ensureSimulatorFloor()
-    globalThis.__planePhysicsSpawn = (kind) => {
-      if (kind === 'sphere') this.spawnSphere()
-      else if (kind === 'cube') this.spawnCube()
-    }
-  }
-
-  onXRSessionStarted() {
-    globalThis.__planePhysicsSpawn = (kind) => {
-      if (kind === 'sphere') this.spawnSphere()
-      else if (kind === 'cube') this.spawnCube()
-    }
   }
 
   /**
