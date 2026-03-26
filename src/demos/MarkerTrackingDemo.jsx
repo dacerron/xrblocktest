@@ -9,6 +9,7 @@ import {
   createMarkerImageBitmap,
   downloadPrintableMarkerPNG,
 } from '../xr/configureWebXRImageTracking.js'
+import { detectImageTrackingSupport } from '../xr/imageTrackingSupport.js'
 import { MarkerTrackingScene } from './MarkerTrackingScene.js'
 
 /**
@@ -33,6 +34,13 @@ export default function MarkerTrackingDemo() {
     async function run() {
       const canvas = canvasRef.current
       if (!canvas) return
+
+      const trackingSupport = await detectImageTrackingSupport()
+      if (!trackingSupport.ok && trackingSupport.message) {
+        window.alert(
+          `Image tracking may not work in this environment.\n\n${trackingSupport.message}`,
+        )
+      }
 
       if (typeof navigator === 'undefined' || !navigator.xr) {
         setBanner(
