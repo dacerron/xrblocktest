@@ -3,6 +3,10 @@
  * - XR Blocks: World / PlaneDetector / DetectedPlane meshes from WebXR or simulator.
  * - Physics: Rapier via `options.physics` (explicit `@dimforge/rapier3d-compat` import).
  * - This script adds kinematic trimesh colliders for each plane mesh and dynamic balls/boxes.
+ *
+ * Spawn + sync follow the Ballpit pattern (BallShooter): parent meshes under this
+ * script and update transforms in `physicsStep()`, not `update()`.
+ * @see https://xrblocks.github.io/docs/samples/Ballpit/
  */
 import * as THREE from 'three'
 import * as xb from 'xrblocks'
@@ -100,6 +104,8 @@ export class PlanePhysicsScene extends xb.Script {
     sun.position.set(2, 4, 3)
     this.add(sun)
     await this.buildSpawnPanel()
+    // Same as BallPit.init(): ensure this script is attached to the scene graph.
+    xb.add(this)
   }
 
   async buildSpawnPanel() {
@@ -284,7 +290,8 @@ export class PlanePhysicsScene extends xb.Script {
       RAPIER.RigidBodyDesc.dynamic()
         .setTranslation(p.x, p.y, p.z)
         .setLinearDamping(0.2)
-        .setAngularDamping(0.2),
+        .setAngularDamping(0.2)
+        .setCcdEnabled(true),
     )
     this.world.createCollider(
       RAPIER.ColliderDesc.ball(radius)
@@ -295,14 +302,16 @@ export class PlanePhysicsScene extends xb.Script {
 
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(radius, 24, 16),
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshLambertMaterial({
         color: randomColor(),
-        roughness: 0.45,
-        metalness: 0.05,
       }),
     )
+    mesh.castShadow = true
+    mesh.receiveShadow = true
     mesh.position.copy(p)
-    xb.scene.add(mesh)
+    // Match Ballpit: parent meshes under this script (not scene root) so they
+    // follow the same graph as BallShooter and sync in physicsStep().
+    this.add(mesh)
     this.spawned.push({ mesh, body })
   }
 
@@ -319,7 +328,8 @@ export class PlanePhysicsScene extends xb.Script {
       RAPIER.RigidBodyDesc.dynamic()
         .setTranslation(p.x, p.y, p.z)
         .setLinearDamping(0.25)
-        .setAngularDamping(0.25),
+        .setAngularDamping(0.25)
+        .setCcdEnabled(true),
     )
     this.world.createCollider(
       RAPIER.ColliderDesc.cuboid(hx, hy, hz)
@@ -330,18 +340,22 @@ export class PlanePhysicsScene extends xb.Script {
 
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(hx * 2, hy * 2, hz * 2),
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshLambertMaterial({
         color: randomColor(),
-        roughness: 0.5,
-        metalness: 0.05,
       }),
     )
+    mesh.castShadow = true
+    mesh.receiveShadow = true
     mesh.position.copy(p)
-    xb.scene.add(mesh)
+    this.add(mesh)
     this.spawned.push({ mesh, body })
   }
 
-  syncSpawnedMeshes() {
+  /**
+   * Ballpit (BallShooter) syncs mesh ↔ Rapier in `physicsStep()` right after
+   * Core’s `world.step()`, not in `update()`. That matches the fixed physics interval.
+   */
+  physicsStep() {
     for (const { mesh, body } of this.spawned) {
       const t = body.translation()
       const r = body.rotation()
@@ -355,6 +369,5 @@ export class PlanePhysicsScene extends xb.Script {
     this.ensurePlaneDebugMeshes()
     this.ensurePlaneColliders()
     this.syncPlaneKinematics()
-    this.syncSpawnedMeshes()
   }
 }
