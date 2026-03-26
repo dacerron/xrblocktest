@@ -113,6 +113,9 @@ export class PlanePhysicsScene extends xb.Script {
   initPhysics(physics) {
     this.world = physics.blendedWorld
     this.RAPIER = physics.RAPIER
+    // Environment: Core already called depth.depthMesh.initRapierPhysics(RAPIER, blendedWorld).
+    // Dynamic spawns use the same World, so they feel gravity (options.physics.gravity) and
+    // collide with the depth trimesh (fixed body) automatically.
   }
 
   getSpawnPoint() {
@@ -135,16 +138,19 @@ export class PlanePhysicsScene extends xb.Script {
     const body = this.world.createRigidBody(
       RAPIER.RigidBodyDesc.dynamic()
         .setTranslation(p.x, p.y, p.z)
-        .setLinearDamping(0.2)
-        .setAngularDamping(0.2)
+        .setGravityScale(1.0)
+        .setLinearDamping(0.06)
+        .setAngularDamping(0.1)
         .setCcdEnabled(true),
     )
     this.world.createCollider(
       RAPIER.ColliderDesc.ball(radius)
-        .setDensity(2.0)
-        .setRestitution(0.35),
+        .setDensity(1.5)
+        .setFriction(0.9)
+        .setRestitution(0.25),
       body,
     )
+    body.wakeUp()
 
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(radius, 24, 16),
@@ -172,16 +178,19 @@ export class PlanePhysicsScene extends xb.Script {
     const body = this.world.createRigidBody(
       RAPIER.RigidBodyDesc.dynamic()
         .setTranslation(p.x, p.y, p.z)
-        .setLinearDamping(0.25)
-        .setAngularDamping(0.25)
+        .setGravityScale(1.0)
+        .setLinearDamping(0.06)
+        .setAngularDamping(0.12)
         .setCcdEnabled(true),
     )
     this.world.createCollider(
       RAPIER.ColliderDesc.cuboid(hx, hy, hz)
-        .setDensity(2.0)
-        .setRestitution(0.2),
+        .setDensity(1.5)
+        .setFriction(0.9)
+        .setRestitution(0.15),
       body,
     )
+    body.wakeUp()
 
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(hx * 2, hy * 2, hz * 2),
