@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import 'xrblocks/addons/simulator/SimulatorAddons.js'
 import * as THREE from 'three'
 import * as xb from 'xrblocks'
@@ -11,6 +11,8 @@ import { applySimulatorAutostart } from '../xr/applySimulatorAutostart.js'
  * - Without a headset, the desktop simulator can auto-start; use WASD + mouse
  */
 export default function BasicPinchDemo() {
+  const canvasRef = useRef(null)
+
   useEffect(() => {
     // React StrictMode can run effects twice in dev; guard globally to avoid
     // double-initializing WebXR / renderer resources.
@@ -18,6 +20,9 @@ export default function BasicPinchDemo() {
     globalThis.__XR_BLOCKS_INIT__ = true
 
     async function run() {
+      const canvas = canvasRef.current
+      if (!canvas) return
+
       class MainScript extends xb.Script {
         init() {
           this.add(new THREE.HemisphereLight(0xffffff, 0x666666, 3))
@@ -52,6 +57,7 @@ export default function BasicPinchDemo() {
 
       xb.add(new MainScript())
       const options = new xb.Options()
+      options.canvas = canvas
       options.setAppTitle('Basic pinch')
       await applySimulatorAutostart(options)
       await xb.init(options)
@@ -60,7 +66,6 @@ export default function BasicPinchDemo() {
     void run()
   }, [])
 
-  // XR Blocks manages its own canvas/DOM.
-  return null
+  return <canvas ref={canvasRef} className="xb-canvas" />
 }
 

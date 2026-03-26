@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import 'xrblocks/addons/simulator/SimulatorAddons.js'
 import * as xb from 'xrblocks'
 import { ModelViewerScene } from './ModelViewerScene.js'
@@ -8,14 +8,20 @@ import { applySimulatorAutostart } from '../xr/applySimulatorAutostart.js'
  * Model viewer sample (see docs). Loads remote GLTF/splat assets from xrblocks CDNs.
  */
 export default function ModelViewerDemo() {
+  const canvasRef = useRef(null)
+
   useEffect(() => {
     if (globalThis.__XR_BLOCKS_INIT__) return
     globalThis.__XR_BLOCKS_INIT__ = true
 
     async function run() {
+      const canvas = canvasRef.current
+      if (!canvas) return
+
       const modelViewerScene = new ModelViewerScene()
       xb.add(modelViewerScene)
       const options = new xb.Options()
+      options.canvas = canvas
       options.setAppTitle('Model Viewer')
       options.simulator.instructions.customInstructions = [
         {
@@ -31,5 +37,5 @@ export default function ModelViewerDemo() {
     void run()
   }, [])
 
-  return null
+  return <canvas ref={canvasRef} className="xb-canvas" />
 }
