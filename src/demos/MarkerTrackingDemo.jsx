@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import 'xrblocks/addons/simulator/SimulatorAddons.js'
 import * as xb from 'xrblocks'
+import { applyMarkerDemoFormFactor } from '../xr/applyMarkerDemoFormFactor.js'
 import { applySimulatorAutostart } from '../xr/applySimulatorAutostart.js'
 import {
   applyWebXRImageTracking,
@@ -51,6 +52,7 @@ export default function MarkerTrackingDemo() {
       const options = new xb.Options()
       options.canvas = canvas
       options.setAppTitle('Image tracking')
+      applyMarkerDemoFormFactor(options)
       await applySimulatorAutostart(options)
 
       try {
