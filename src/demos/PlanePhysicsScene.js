@@ -58,11 +58,11 @@ class SpawnCubeButton extends xb.TextButton {
 export class PlanePhysicsScene extends xb.Script {
   constructor() {
     super()
-    /** @type {import('@dimforge/rapier3d-compat').World | null} */
+    /** @type {import('@dimforge/rapier3d-simd-compat').World | null} */
     this.world = null
     /** @type {any} */
     this.RAPIER = null
-    /** @type {Array<{ mesh: THREE.Mesh; body: import('@dimforge/rapier3d-compat').RigidBody }>} */
+    /** @type {Array<{ mesh: THREE.Mesh; body: import('@dimforge/rapier3d-simd-compat').RigidBody }>} */
     this.spawned = []
   }
 

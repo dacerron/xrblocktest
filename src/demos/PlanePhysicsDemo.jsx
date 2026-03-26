@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import 'xrblocks/addons/simulator/SimulatorAddons.js'
 import * as xb from 'xrblocks'
-import RAPIER from '@dimforge/rapier3d-compat'
+import RAPIER from '@dimforge/rapier3d-simd-compat'
 import { PlanePhysicsScene } from './PlanePhysicsScene.js'
 import { applySimulatorAutostart } from '../xr/applySimulatorAutostart.js'
 
