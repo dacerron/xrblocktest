@@ -3,6 +3,7 @@ import 'xrblocks/addons/simulator/SimulatorAddons.js'
 import * as xb from 'xrblocks'
 import { applyMarkerDemoFormFactor } from '../xr/applyMarkerDemoFormFactor.js'
 import { applySimulatorAutostart } from '../xr/applySimulatorAutostart.js'
+import { requestMarkerCameraPermission } from '../xr/requestMarkerCameraPermission.js'
 import {
   applyWebXRImageTracking,
   createMarkerImageBitmap,
@@ -18,6 +19,12 @@ import { MarkerTrackingScene } from './MarkerTrackingScene.js'
 export default function MarkerTrackingDemo() {
   const canvasRef = useRef(null)
   const [banner, setBanner] = useState(null)
+  /** When mobile form factor enables device camera, show an explicit tap-to-allow control (Android). */
+  const [cameraGate, setCameraGate] = useState({
+    visible: false,
+    status: 'idle',
+    lastError: null,
+  })
 
   useEffect(() => {
     if (globalThis.__XR_BLOCKS_INIT__) return
@@ -55,6 +62,14 @@ export default function MarkerTrackingDemo() {
       applyMarkerDemoFormFactor(options)
       await applySimulatorAutostart(options)
 
+      if (options.permissions?.camera) {
+        setCameraGate({
+          visible: true,
+          status: 'idle',
+          lastError: null,
+        })
+      }
+
       try {
         await xb.init(options)
       } catch (err) {
@@ -81,6 +96,41 @@ export default function MarkerTrackingDemo() {
           pixel-for-pixel. Print at 25&nbsp;cm wide to match the default
           physical size (see <code>widthInMeters</code> in the demo).
         </p>
+        {cameraGate.visible && cameraGate.status !== 'granted' ? (
+          <div className="demo-marker-camera-prompt" role="region" aria-label="Camera access">
+            <p className="demo-marker-camera-prompt-text">
+              On Android, the camera permission must follow a tap. If you did not
+              see a system prompt, tap below before or after &quot;Enter XR&quot;.
+            </p>
+            <button
+              type="button"
+              className="demo-marker-camera-prompt-btn"
+              disabled={cameraGate.status === 'pending'}
+              onClick={() => {
+                void (async () => {
+                  setCameraGate((g) => ({ ...g, status: 'pending', lastError: null }))
+                  const r = await requestMarkerCameraPermission()
+                  if (r.ok) {
+                    setCameraGate((g) => ({ ...g, status: 'granted', visible: false }))
+                  } else {
+                    setCameraGate((g) => ({
+                      ...g,
+                      status: 'idle',
+                      lastError: r.error ?? 'Unknown error',
+                    }))
+                  }
+                })()
+              }}
+            >
+              {cameraGate.status === 'pending' ? 'Requesting…' : 'Allow camera'}
+            </button>
+            {cameraGate.lastError ? (
+              <p className="demo-marker-camera-prompt-err" role="alert">
+                {cameraGate.lastError}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       {banner ? (
         <div className="demo-status-banner" role="status">
