@@ -11,6 +11,7 @@ Use the query parameter `demo` (full page load):
 - **Basic pinch** (default): `?demo=basic` — cylinder in front of you; pinch/select changes color.
 - **Model viewer** (from the [docs sample](https://xrblocks.github.io/docs/samples/ModelViewer/)): `?demo=modelviewer` — `xb.ModelViewer` scenes loading remote GLTF/splat assets.
 - **Depth physics** (`?demo=planes`): Ballpit-style **depth mesh** collision — `options.depth = new xb.DepthOptions(xb.xrDepthMeshPhysicsOptions)` so Core attaches Rapier colliders to the environment mesh (not plane detection). Spawned spheres/cubes use the same **Rapier** world. Requires a session with **depth-sensing** (e.g. Quest MR). Spawning uses an XR Blocks **SpatialPanel** with **TextButton** targets.
+- **Tower Security** (`?demo=tower`): Cybersecurity-themed tower defense — **8-wave campaign** with briefing, debrief, and timed **IR** beats between waves. Anchor a board, read each briefing, **Begin wave**, then place controls during combat (pinch/click buildable cells). A draggable **legend panel** explains map colors, control shapes, and threat spheres. Four tower types: Firewall (slow), EDR (burst), IDS (reveals spies), MFA (vs bots). Credits from **kills**, **passive trickle**, and **wave-clear** bonuses; optional hints with **`?ai=1`**. Keys **1–4** / **N** pick tower slot.
 
 Example on GitHub Pages:
 
