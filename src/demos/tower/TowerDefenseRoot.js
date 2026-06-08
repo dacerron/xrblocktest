@@ -15,13 +15,15 @@ import { GameState } from './systems/GameState.js'
 import { TowerSystem } from './systems/TowerSystem.js'
 import {
   anchorFallback,
+  anchorFallbackInFront,
   anchorToPlane,
   excludeDetectedPlanesFromRaycast,
   findBestHorizontalPlane,
 } from './planeAnchor.js'
+import { isImmersiveSession } from './uiLayout.js'
 
-/** Frames to wait for plane detection before using the in-front-of-user fallback. */
-const PLANE_SEARCH_FRAMES = 90
+/** Simulator/desktop: wait briefly for planes before fallback. Quest: show content immediately. */
+const PLANE_SEARCH_FRAMES_DESKTOP = 90
 
 const _boardHits = []
 
@@ -47,6 +49,7 @@ export class TowerDefenseRoot extends xb.Script {
     this.combatSystem = null
     /** @type {GameUi | null} */
     this.gameUi = null
+    this.inImmersiveSession = false
     this.aiHintsEnabled =
       xb.getUrlParamBool('ai') ||
       globalThis.__TOWER_SECURITY_AI__ === true
@@ -90,10 +93,32 @@ export class TowerDefenseRoot extends xb.Script {
   }
 
   onSimulatorStarted() {
+    this.inImmersiveSession = false
     this.anchorMode = 'pending'
     this.trackedPlane = null
     this.fallbackFrames = 0
     this.fallbackApplied = false
+    this.gameUi?.updateLayout(false)
+  }
+
+  onXRSessionStarted(_session) {
+    this.inImmersiveSession = true
+    this.anchorMode = 'pending'
+    this.trackedPlane = null
+    this.fallbackFrames = 0
+    this.fallbackApplied = false
+
+    // Show board + UI immediately while plane detection catches up.
+    anchorFallbackInFront(this.anchorRoot)
+    this.anchorMode = 'fallback'
+    this.fallbackApplied = true
+
+    this.gameUi?.updateLayout(true)
+  }
+
+  onXRSessionEnded() {
+    this.inImmersiveSession = false
+    this.gameUi?.updateLayout(false)
   }
 
   handleFlowPrimary() {
@@ -271,6 +296,22 @@ export class TowerDefenseRoot extends xb.Script {
         this.anchorMode = 'pending'
         this.trackedPlane = null
         this.fallbackFrames = 0
+        this.fallbackApplied = false
+      }
+      return
+    }
+
+    if (this.anchorMode === 'fallback') {
+      const plane = findBestHorizontalPlane()
+      if (plane) {
+        excludeDetectedPlanesFromRaycast()
+        anchorToPlane(this.anchorRoot, plane)
+        this.anchorMode = 'plane'
+        this.trackedPlane = plane
+        return
+      }
+      if (this.inImmersiveSession || isImmersiveSession()) {
+        anchorFallbackInFront(this.anchorRoot)
       }
       return
     }
@@ -289,8 +330,11 @@ export class TowerDefenseRoot extends xb.Script {
     if (this.fallbackApplied) return
 
     this.fallbackFrames += 1
-    const heightReady = xb.user.height > 0
-    if (heightReady && this.fallbackFrames >= PLANE_SEARCH_FRAMES) {
+    const searchLimit = this.inImmersiveSession
+      ? 0
+      : PLANE_SEARCH_FRAMES_DESKTOP
+
+    if (this.fallbackFrames > searchLimit) {
       anchorFallback(this.anchorRoot)
       this.anchorMode = 'fallback'
       this.fallbackApplied = true

@@ -2,6 +2,11 @@ import * as xb from 'xrblocks'
 import { getCampaignWave, WAVE_COUNT } from './waves.js'
 import { getBriefingHint, getIrChallenge } from './lessonService.js'
 import { LEGEND_SECTIONS } from './legendContent.js'
+import {
+  isImmersiveSession,
+  panelViewDistance,
+  placePanelFacingUser,
+} from './uiLayout.js'
 
 /** Flat action panel size (matches Ballpit spawn panel proportions). */
 const ACTION_PANEL = { width: 0.5, height: 0.1 }
@@ -102,6 +107,8 @@ export class GameUi {
     this.restartButton = null
     this.legendPanel = null
     this.panelZ = -1
+    /** @type {'world' | 'head'} */
+    this.layoutMode = 'world'
   }
 
   build(parent) {
@@ -268,6 +275,51 @@ export class GameUi {
 
     this.defeatActionPanel.position.set(0, xb.user.height - 0.18, z * 0.85)
     this.defeatActionPanel.updateLayouts()
+
+    this.layoutMode = isImmersiveSession() ? 'head' : 'world'
+    this.updateLayout()
+  }
+
+  /**
+   * Reposition panels each frame on Quest (head-relative) or once for simulator (world).
+   * @param {boolean} [forceHeadRelative]
+   */
+  updateLayout(forceHeadRelative = false) {
+    const headRelative = forceHeadRelative || this.layoutMode === 'head' || isImmersiveSession()
+    this.layoutMode = headRelative ? 'head' : 'world'
+
+    const z = panelViewDistance()
+    this.panelZ = -z
+    const hudY = xb.user.height - 0.1
+
+    if (headRelative) {
+      placePanelFacingUser(this.hudPanel, 0, 0.06, -z)
+      placePanelFacingUser(this.flowPanel, 0, -0.16, -z)
+      placePanelFacingUser(this.flowActionPanel, 0, -0.36, -z)
+      placePanelFacingUser(this.legendPanel, 0.38, -0.04, -z * 0.98)
+      placePanelFacingUser(this.defeatPanel, 0, 0.1, -z * 0.9)
+      placePanelFacingUser(this.defeatActionPanel, 0, -0.08, -z * 0.9)
+      return
+    }
+
+    if (this.hudPanel) {
+      this.hudPanel.position.set(0, hudY, -z)
+    }
+    if (this.flowPanel) {
+      this.flowPanel.position.set(0, hudY - 0.22, -z)
+    }
+    if (this.flowActionPanel) {
+      this.flowActionPanel.position.set(0, hudY - 0.42, -z)
+    }
+    if (this.legendPanel) {
+      this.legendPanel.position.set(0.5, hudY - 0.12, -z * 0.98)
+    }
+    if (this.defeatPanel) {
+      this.defeatPanel.position.set(0, xb.user.height - 0.04, -z * 0.85)
+    }
+    if (this.defeatActionPanel) {
+      this.defeatActionPanel.position.set(0, xb.user.height - 0.18, -z * 0.85)
+    }
   }
 
   /**
@@ -337,6 +389,10 @@ export class GameUi {
    * @param {import('./economy.js').Economy} economy
    */
   sync(gameState, enemySystem, economy) {
+    if (this.layoutMode === 'head' || isImmersiveSession()) {
+      this.updateLayout(true)
+    }
+
     if (this.statusView) {
       this.statusView.text = gameState.statusLine
     }
